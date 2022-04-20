@@ -116,7 +116,7 @@ function triggerSlide(slideIndex) {
         presentationInfo = JSON.parse(xmlHttp.response);
         // Only proceed if current presenation is of correct name
         if (presentationInfo.presentation.id.name == nameOfPresentationToControl) {
-          xmlHttp.open( "GET", "http://127.0.0.1:50001/v1/presentation/" + currentPresentationUUID + "/trigger/" + slideIndex);
+          xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/' + currentPresentationUUID + '/trigger/' + slideIndex);
           xmlHttp.onload = function(e) {
             if (currentSlideIndex >=0) {
               document.querySelectorAll(".slide")[currentSlideIndex].setAttribute("style","");
@@ -142,5 +142,3 @@ xmlHttp.send()
 }
 </script>
 </html>
-
-
