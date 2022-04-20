@@ -15,3 +15,6 @@ var nameOfPresentationToControl = "Message" // This web page will be able to con
 ```
 
 And then open the **Pro7SinglePresentationRemote.html** in your fav web browser.
+
+Tip: To use this on an iPad you will need to host it on a webserver that the iPad can access (I know of no way to copy the file to an iPad and open it).
+There are many ways to setup a super simple HTTP server to host it on any computer on your network - (eg `python3 -m SimpleHTTPServer 8000` in a MacOS terminal folder that contains the .html file is a simple one-liner that works on modern MacOS)
