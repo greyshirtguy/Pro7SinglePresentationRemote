@@ -28,6 +28,7 @@ body {
 
 </body>
 <script>
+  // TODO: Show current active slide when first loading presentation!
   // TODO: live feedback of active slide if Pro7 active slide changes by means other than this web app telling it to.
   // TODO: live feedback for lose of control if active presentation changes away from controllable presentation
   // TODO: Consider a nicer method to lock down to desired presentation instead of hard coded name  - Perhaps an electron app as middle-man where operator can select a presentation to make it controllable?)
@@ -41,6 +42,7 @@ var nameOfPresentationToControl = "Message" // This web page will be able to con
 
 
 var currentSlideIndex = -1;
+var slideCount;
 var currentPresentationUUID;
 var currentPresentationName;
 var presentationInfo;
@@ -55,6 +57,7 @@ xmlHttp.onload = function(e) {
       currentPresentationUUID = presentationInfo.presentation.id.uuid;
       currentPresentationName = presentationInfo.presentation.id.name;
       console.log('Response: ' + xmlHttp.response);
+      slideCount = 0;
       getSlide(0); // start recursively getting all slide thumbs...
     } catch (error) {
       console.log('error:' + error);
@@ -72,15 +75,17 @@ function getSlide(slideIndex) {
 
   xhr.onload = () => {
     if (xhr.status == 200) {
+    // Add new slide to grid...
     slideElement = document.createElement('img');
     slideElement.setAttribute('class','slide');
-    slideElement.setAttribute('src', window.URL.createObjectURL(xhr.response));
-    if (currentPresentationName != nameOfPresentationToControl) {
-      slideElement.setAttribute('style', 'opacity:0.5')
+    slideElement.setAttribute('src', window.URL.createObjectURL(xhr.response)); // create a temporary blob object to hold the image data and be the src for the image element
+    if (currentPresentationName != nameOfPresentationToControl) { // Check if presentation has correct name to allow control
+      slideElement.setAttribute('style', 'opacity:0.5') // set low opacity to create a disabled "ghosted" effect (shows user they cannot control this presentation)
     }
     slideElement.slideIndex = slideIndex;
     slideElement.addEventListener("click", handleClick);
     document.querySelector('.grid-container').appendChild(slideElement);
+    slideCount++; // Keep track of how many slides we have.
     getSlide(slideIndex+1); // Keep calling for next slide thumbnail until we fail with a 404 - need to do it this way since there is no way to astertain # of slides when a presentation has a custom arrangement active.
     }
   };
@@ -91,38 +96,46 @@ function getSlide(slideIndex) {
 
 
 
-document.addEventListener("keypress",handleKeyPress) // Allow spacebar to go to next slide.
+document.addEventListener("keydown",handleKeyDown) // Allow keyboard control (both space and arrow keys)
 
-function handleKeyPress (event) {
-	if (event.key == " ") {
-    	event.preventDefault();
-        if (currentSlideIndex < document.querySelectorAll(".slide").length-1) {
-    		triggerSlide(currentSlideIndex+1);
-        }
-    }
+function handleKeyDown (event) {
+	if (event.key == " " || event.keyCode == 39) {
+    event.preventDefault();
+      if (currentSlideIndex < slideCount-1) { // Do not try to trigger past last slide
+        triggerSlide(currentSlideIndex+1);
+      }
+  }
+  if (event.keyCode == 37) {
+    event.preventDefault();
+      if (currentSlideIndex > 0) { // do not try to trigger before first slide
+        triggerSlide(currentSlideIndex-1);
+      }
+  }
 }
 
 function handleClick(event) {
-	console.log("Slide clicked: " + event.currentTarget.slideIndex);
 	triggerSlide(event.currentTarget.slideIndex);
 }
 
 function triggerSlide(slideIndex) {
+  console.log("triggerSlide: " + slideIndex);
+  // Perform a quick check of current presentation - confrim if it has correct name before sending any trigger commands!
   xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/current');
   xmlHttp.onload = function(e) {
     if (xmlHttp.status == 200) {
       
       try {
         presentationInfo = JSON.parse(xmlHttp.response);
-        // Only proceed if current presenation is of correct name
-        if (presentationInfo.presentation.id.name == nameOfPresentationToControl) {
+        if (presentationInfo.presentation.id.name == nameOfPresentationToControl) { // Only send triggers if current presentation has correct name
           xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/' + currentPresentationUUID + '/trigger/' + slideIndex);
           xmlHttp.onload = function(e) {
+            // Remove highlighted border from previously selected/triggered slide...
             if (currentSlideIndex >=0) {
               document.querySelectorAll(".slide")[currentSlideIndex].setAttribute("style","");
             }
+            // Apple highlight border to newly triggered slide:
             document.querySelectorAll(".slide")[slideIndex].setAttribute("style","outline-style:solid; outline-color:orange; outline-width:7px");
-            currentSlideIndex = slideIndex;
+            currentSlideIndex = slideIndex; // Update record of which slide is highlighted/triggered.
           }
           xmlHttp.send( null );
         }
