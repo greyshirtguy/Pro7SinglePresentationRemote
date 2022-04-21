@@ -22,7 +22,7 @@ body {
 <body>
 
 <h3 onClick="window.location.reload();" style="color:darkcyan;cursor: pointer;padding-left: 10px;margin:0">Refresh Presentation</h3>
-<!-- <i><pre id="controlStatus" style="color:gray;padding-left: 10px;margin:0">Control Disabled</pre></body></i> -->
+<i><pre id="status-message" style="color:gray;padding-left: 10px;margin:0">Tap <q>Refresh Presentation</q> To Refresh Slides</pre></body></i>
 <div class="grid-container">
 </div>
 
@@ -56,15 +56,27 @@ xmlHttp.onload = function(e) {
       currentPresentationUUID = presentationInfo.presentation.presentation_id.uuid;
       currentPresentationName = presentationInfo.presentation.presentation_id.name;
       currentSlideIndex = presentationInfo.presentation.index;
+
+      if (currentPresentationName != nameOfPresentationToControl) {
+        document.querySelector('#status-message').innerText = 'Not Controllable. Tap "Refresh Presentation" To Refresh Slides'
+      } else {
+        document.querySelector('#status-message').innerText = 'Controllable - Tap any slide to Trigger. (Spacebar and Arrow keys also work). Tap "Refresh Presentation" To Refresh Slides'
+      }
+
       console.log('Response: ' + xmlHttp.response);
       slideCount = 0;
       getSlide(0); // start recursively getting all slide thumbs...
     } catch (error) {
-      console.log('error:' + error);
+      document.querySelector('#status-message').innerText = 'Error: ' + error;
     }
   }
 };
-xmlHttp.send()
+
+xmlHttp.onerror = function(e) {
+  document.querySelector('#status-message').innerText = 'Could NOT connect to ProPresenter at: ' +'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter;
+}
+
+xmlHttp.send();
 
 
 function getSlide(slideIndex) {
@@ -133,13 +145,14 @@ function handleClick(event) {
 function triggerSlide(slideIndex) {
   console.log("triggerSlide: " + slideIndex);
   // Perform a quick check of current presentation - confirm if it has correct name before sending any trigger commands!
-  xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/current');
+  xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/slide_index');
   xmlHttp.onload = function(e) {
     if (xmlHttp.status == 200) {
       
       try {
         presentationInfo = JSON.parse(xmlHttp.response);
-        if (presentationInfo.presentation.id.name == nameOfPresentationToControl) { // Only send triggers if current presentation has correct name
+        if (presentationInfo.presentation.presentation_id.name == nameOfPresentationToControl && presentationInfo.presentation.presentation_id.name == currentPresentationName) { // Only send triggers if current presentation has correct name
+          document.querySelector('#status-message').innerText = 'Controllable - Tap any slide to Trigger. (Spacebar and Arrow keys also work). Tap "Refresh Presentation" To Refresh Slides'
           xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/' + currentPresentationUUID + '/trigger/' + slideIndex);
           xmlHttp.onload = function(e) {
             // Remove highlighted border from previously selected/triggered slide...
@@ -151,6 +164,11 @@ function triggerSlide(slideIndex) {
             currentSlideIndex = slideIndex; // Update record of which slide is highlighted/triggered.
           }
           xmlHttp.send( null );
+        }
+
+        if (presentationInfo.presentation.presentation_id.name != currentPresentationName) {
+          // Active presentation has changed away since last refresh....Let user know
+          document.querySelector('#status-message').innerText = 'Active presentation changed. Tap "Refresh Presentation" To Refresh Slides'
         }
 
       } catch (error) {
