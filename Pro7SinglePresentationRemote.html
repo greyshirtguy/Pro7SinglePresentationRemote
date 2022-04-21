@@ -28,7 +28,6 @@ body {
 
 </body>
 <script>
-  // TODO: Show current active slide when first loading presentation!
   // TODO: live feedback of active slide if Pro7 active slide changes by means other than this web app telling it to.
   // TODO: live feedback for lose of control if active presentation changes away from controllable presentation
   // TODO: Consider a nicer method to lock down to desired presentation instead of hard coded name  - Perhaps an electron app as middle-man where operator can select a presentation to make it controllable?)
@@ -48,14 +47,15 @@ var currentPresentationName;
 var presentationInfo;
 var xmlHttp = new XMLHttpRequest();
 
-xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/current');
+xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/slide_index');
 xmlHttp.onload = function(e) {
   if (xmlHttp.status == 200) {
     
     try {
       presentationInfo = JSON.parse(xmlHttp.response);
-      currentPresentationUUID = presentationInfo.presentation.id.uuid;
-      currentPresentationName = presentationInfo.presentation.id.name;
+      currentPresentationUUID = presentationInfo.presentation.presentation_id.uuid;
+      currentPresentationName = presentationInfo.presentation.presentation_id.name;
+      currentSlideIndex = presentationInfo.presentation.index;
       console.log('Response: ' + xmlHttp.response);
       slideCount = 0;
       getSlide(0); // start recursively getting all slide thumbs...
@@ -77,16 +77,29 @@ function getSlide(slideIndex) {
     if (xhr.status == 200) {
     // Add new slide to grid...
     slideElement = document.createElement('img');
+    slideElement.slideIndex = slideIndex;
     slideElement.setAttribute('class','slide');
     slideElement.setAttribute('src', window.URL.createObjectURL(xhr.response)); // create a temporary blob object to hold the image data and be the src for the image element
-    if (currentPresentationName != nameOfPresentationToControl) { // Check if presentation has correct name to allow control
-      slideElement.setAttribute('style', 'opacity:0.5') // set low opacity to create a disabled "ghosted" effect (shows user they cannot control this presentation)
+
+    // Check if presentation has correct name to allow control
+    if (currentPresentationName != nameOfPresentationToControl) {
+      slideElement.style["opacity"] = '0.5'; // set low opacity to create a disabled "ghosted" effect (shows user they cannot control this presentation)
     }
-    slideElement.slideIndex = slideIndex;
-    slideElement.addEventListener("click", handleClick);
+
+    // Show current active slide with highlighted border
+    if (slideElement.slideIndex == currentSlideIndex) {
+      slideElement.style["outline-style"] = "solid";
+      slideElement.style["outline-color"] = "orange";
+      slideElement.style["outline-width"] = "7px";
+
+    }
+    
+    slideElement.addEventListener("click", handleClick); // Add click handler to all slides (logic to check if clicking a slide show allow control is done in the triggerSlide function)
     document.querySelector('.grid-container').appendChild(slideElement);
     slideCount++; // Keep track of how many slides we have.
-    getSlide(slideIndex+1); // Keep calling for next slide thumbnail until we fail with a 404 - need to do it this way since there is no way to astertain # of slides when a presentation has a custom arrangement active.
+
+    // Keep calling this getSlide function recursively for the next slide thumbnail until we fail with a 404 - need to do it this way since there is no way to astertain # of slides when a presentation has a custom arrangement active.
+    getSlide(slideIndex+1); 
     }
   };
 
@@ -119,7 +132,7 @@ function handleClick(event) {
 
 function triggerSlide(slideIndex) {
   console.log("triggerSlide: " + slideIndex);
-  // Perform a quick check of current presentation - confrim if it has correct name before sending any trigger commands!
+  // Perform a quick check of current presentation - confirm if it has correct name before sending any trigger commands!
   xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/current');
   xmlHttp.onload = function(e) {
     if (xmlHttp.status == 200) {
