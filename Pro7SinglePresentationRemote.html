@@ -43,7 +43,10 @@ var xmlHttp = new XMLHttpRequest();
 var url = new URL(window.location.href);
 var ipAddressOfProPresenterComputer = url.searchParams.get("address"); // Hostname can used used here also if you have hostname resolution for your ProPresenter computer
 var networkPortOfProPresenter = url.searchParams.get("port"); // See ProPresenter network prefs
-var nameOfPresentationToControl = url.searchParams.get("presentation").toLowerCase(); // This web page will be able to control any active presentation if it's name that matches
+var nameOfPresentationToControl = url.searchParams.get("presentation"); // This web page will be able to control any active presentation if it's name that matches
+if (nameOfPresentationToControl != null) {
+  nameOfPresentationToControl = nameOfPresentationToControl.toLowerCase()
+}
 var slideQuality = url.searchParams.get("quality");
 
 if (slideQuality == null) {
@@ -95,7 +98,9 @@ xmlHttp.onerror = function(e) {
   document.querySelector('#status-message').innerText = 'Could NOT connect to ProPresenter at: ' +'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter;
 }
 
-xmlHttp.send();
+if (!missingParametersFlag) {
+  xmlHttp.send();
+}
 
 
 function getSlide(slideIndex) {
