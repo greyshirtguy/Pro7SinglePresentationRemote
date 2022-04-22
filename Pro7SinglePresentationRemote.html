@@ -8,7 +8,7 @@ body {
 
 .grid-container {
   display: grid;
-  grid-template-columns: auto auto auto auto auto;
+  grid-template-columns: auto auto auto auto;
   padding: 10px;
   gap: 10px;
 }
@@ -23,7 +23,7 @@ body {
 
 <h3 onClick="window.location.reload();" style="color:darkcyan;cursor: pointer;padding-left: 10px;margin:0">Refresh Presentation</h3>
 <i><pre id="status-message" style="color:gray;padding-left: 10px;margin:0">Tap <q>Refresh Presentation</q> To Refresh Slides</pre></body></i>
-<div class="grid-container">
+<div id="grid-container" class="grid-container">
 </div>
 
 </body>
@@ -33,28 +33,47 @@ body {
   // TODO: Consider a nicer method to lock down to desired presentation instead of hard coded name  - Perhaps an electron app as middle-man where operator can select a presentation to make it controllable?)
   // TODO: make grid/slides more "responsive" (scale up and down the slides as container is resized and/or dynamic # of columns)
 
-// ***** UPDATE THESE VALUES TO SUIT YOUR SETUP ******* 
-var ipAddressOfProPresenterComputer = '127.0.0.1' // Hostname can used used here also if you have hostname resolution for your ProPresenter computer
-var networkPortOfProPresenter = '50001' // See ProPresenter network prefs
-var nameOfPresentationToControl = "Message" // This web page will be able to control any active presentation if it's name that matches
-// ****************************************************
-
-
 var currentSlideIndex = -1;
 var slideCount;
 var currentPresentationUUID;
 var currentPresentationName;
 var presentationInfo;
+var missingParametersFlag = false;
 var xmlHttp = new XMLHttpRequest();
+var url = new URL(window.location.href);
+var ipAddressOfProPresenterComputer = url.searchParams.get("address"); // Hostname can used used here also if you have hostname resolution for your ProPresenter computer
+var networkPortOfProPresenter = url.searchParams.get("port"); // See ProPresenter network prefs
+var nameOfPresentationToControl = url.searchParams.get("presentation").toLowerCase(); // This web page will be able to control any active presentation if it's name that matches
+var slideQuality = url.searchParams.get("quality");
 
-xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/slide_index');
+if (slideQuality == null) {
+  slideQuality = "600";
+}
+
+var containerWidth = document.getElementById('grid-container').clientWidth;
+
+if (ipAddressOfProPresenterComputer == null || networkPortOfProPresenter == null) {
+  document.querySelector('#status-message').innerText = ('Missing one or more required URL parameters: address=... and/or port=...');
+  missingParametersFlag = true;
+}
+
+try {
+  if (!missingParametersFlag) {
+    xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/slide_index');
+  }
+} catch (error) {
+  document.querySelector('#status-message').innerText = (error + ' while trying to open: ' + 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/slide_index');
+}
+
+
+
 xmlHttp.onload = function(e) {
   if (xmlHttp.status == 200) {
     
     try {
       presentationInfo = JSON.parse(xmlHttp.response);
       currentPresentationUUID = presentationInfo.presentation.presentation_id.uuid;
-      currentPresentationName = presentationInfo.presentation.presentation_id.name;
+      currentPresentationName = presentationInfo.presentation.presentation_id.name.toLowerCase();
       currentSlideIndex = presentationInfo.presentation.index;
 
       if (currentPresentationName != nameOfPresentationToControl) {
@@ -82,7 +101,12 @@ xmlHttp.send();
 function getSlide(slideIndex) {
   var xhr = new XMLHttpRequest();
 
-  xhr.open('GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/' + currentPresentationUUID + '/thumbnail/' + slideIndex + '?quality=300', true);
+  try {
+    xhr.open('GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/' + currentPresentationUUID + '/thumbnail/' + slideIndex + '?quality=' + slideQuality, true);
+  } catch (error) {
+    document.querySelector('#status-message').innerText = ('error:' + error);
+  }
+  
   xhr.responseType = 'blob';
 
   xhr.onload = () => {
@@ -92,7 +116,10 @@ function getSlide(slideIndex) {
     slideElement.slideIndex = slideIndex;
     slideElement.setAttribute('class','slide');
     slideElement.setAttribute('src', window.URL.createObjectURL(xhr.response)); // create a temporary blob object to hold the image data and be the src for the image element
-
+    //slideElement.style["width"] = String(parseInt(slideQuality)/2) + 'px';
+    slideElement.style["width"] = String(parseInt((containerWidth-50)/4)) + 'px';
+    slideElement.style["outline-color"] = "orange";
+    slideElement.style["outline-width"] = "7px";;
     // Check if presentation has correct name to allow control
     if (currentPresentationName != nameOfPresentationToControl) {
       slideElement.style["opacity"] = '0.5'; // set low opacity to create a disabled "ghosted" effect (shows user they cannot control this presentation)
@@ -101,9 +128,6 @@ function getSlide(slideIndex) {
     // Show current active slide with highlighted border
     if (slideElement.slideIndex == currentSlideIndex) {
       slideElement.style["outline-style"] = "solid";
-      slideElement.style["outline-color"] = "orange";
-      slideElement.style["outline-width"] = "7px";
-
     }
     
     slideElement.addEventListener("click", handleClick); // Add click handler to all slides (logic to check if clicking a slide show allow control is done in the triggerSlide function)
@@ -118,8 +142,6 @@ function getSlide(slideIndex) {
   xhr.send();
       
 }
-
-
 
 document.addEventListener("keydown",handleKeyDown) // Allow keyboard control (both space and arrow keys)
 
@@ -151,37 +173,35 @@ function triggerSlide(slideIndex) {
       
       try {
         presentationInfo = JSON.parse(xmlHttp.response);
-        if (presentationInfo.presentation.presentation_id.name == nameOfPresentationToControl && presentationInfo.presentation.presentation_id.name == currentPresentationName) { // Only send triggers if current presentation has correct name
+        if (presentationInfo.presentation.presentation_id.name.toLowerCase() == nameOfPresentationToControl.toLowerCase() && presentationInfo.presentation.presentation_id.name.toLowerCase() == currentPresentationName.toLowerCase()) { // Only send triggers if current presentation has correct name
           document.querySelector('#status-message').innerText = 'Controllable - Tap any slide to Trigger. (Spacebar and Arrow keys also work). Tap "Refresh Presentation" To Refresh Slides'
           xmlHttp.open( 'GET', 'http://' + ipAddressOfProPresenterComputer + ':' + networkPortOfProPresenter + '/v1/presentation/' + currentPresentationUUID + '/trigger/' + slideIndex);
           xmlHttp.onload = function(e) {
             // Remove highlighted border from previously selected/triggered slide...
             if (currentSlideIndex >=0) {
-              document.querySelectorAll(".slide")[currentSlideIndex].setAttribute("style","");
+              document.querySelectorAll(".slide")[currentSlideIndex].style["outline-style"] = null;
+            
+              // Update record of which slide is highlighted/triggered.
+              currentSlideIndex = slideIndex;
+
+              // Highlight border to newly triggered slide:
+              document.querySelectorAll(".slide")[currentSlideIndex].style["outline-style"] = 'solid';
             }
-            // Apple highlight border to newly triggered slide:
-            document.querySelectorAll(".slide")[slideIndex].setAttribute("style","outline-style:solid; outline-color:orange; outline-width:7px");
-            currentSlideIndex = slideIndex; // Update record of which slide is highlighted/triggered.
           }
           xmlHttp.send( null );
         }
 
-        if (presentationInfo.presentation.presentation_id.name != currentPresentationName) {
+        if (presentationInfo.presentation.presentation_id.name.toLowerCase() != currentPresentationName.toLowerCase()) {
           // Active presentation has changed away since last refresh....Let user know
           document.querySelector('#status-message').innerText = 'Active presentation changed. Tap "Refresh Presentation" To Refresh Slides'
         }
 
       } catch (error) {
-        console.log('error:' + error);
+        document.querySelector('#status-message').innerText = ('error:' + error);
       }
     }
   };
 xmlHttp.send()  
-
-
-
-
-	  
 
 }
 </script>
