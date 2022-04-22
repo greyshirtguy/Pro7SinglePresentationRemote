@@ -31,5 +31,4 @@ It's easier than you think to run up a tiny http server on a computer on your LA
 Example URL to connect to ProPresenter 7 with ip address 192.168.1.7 and port 50001 and control the presentation that is called "Message":
 
 http://pro7api.greyshirtguy.com/Pro7SinglePresentationRemote.html?address=192.168.1.7&port=50001&presentation=message
-
-(Does not work in desktop browsers - due to security restrictions)
+This online verion is for Ipads - It does not work in desktop browsers - due to security restrictions in most desktop browsers.
