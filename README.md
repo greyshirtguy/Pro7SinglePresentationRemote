@@ -24,9 +24,9 @@ Click any slide to trigger it (Space Bar and Arrow keys also work!)
 
 Tip: To use this on an iPad you will need to host it on a webserver that the iPad can access.
 I have hosted at my personal website to enable this for users that cannot host it themselves.
-https://greyshirtguy.com/Pro7SinglePresentationRemote.html
+http://pro7api.greyshirtguy.com/Pro7SinglePresentationRemote.html
 Please note this is BETA and make change/break at any time!
 
 Example URL to connect to ProPresenter 7 with ip address 192.167.1.7 and port 50001 and control the presentation that is called "Message":
-`https://greyshirtguy.com/Pro7SinglePresentationRemote.html?address=127.0.0.1&port=50001&presentation=message`
+http://pro7api.greyshirtguy.com/Pro7SinglePresentationRemote.html?address=192.168.1.7&port=50001&presentation=message
 
