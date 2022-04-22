@@ -1,5 +1,6 @@
 # Pro7SinglePresentationRemote
-A simple web app for someone to view and control a **single** specific presentation in Pro7
+A simple web app for someone to view and control a **single** specific presentation in Pro7  
+** Please note this is BETA and it may change/break at any time! (I've only put a few hours into it so far) **
 ![Screenshot](Screenshot.png)
 
 Allows control of a **single** presentation in Pro7 using the new API in versions 7.9 and later.
@@ -22,7 +23,6 @@ quality=[Quality of thumbnail images is the width in pixels of the image data (d
 
 Click any slide to trigger it (Space Bar and Arrow keys also work!)
 
-Please note this is BETA and it may change/break at any time! (I've only put a few hours into it so far)
 
 Tip: To use this on an iPad you will need to host it on a webserver that the iPad can access (iPads cannot open locally saved .html files)
 Ideally you would host it on a local http server on your lan (this makes most browser happier from a security prespective).
