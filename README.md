@@ -26,7 +26,11 @@ Click any slide to trigger it (Space Bar and Arrow keys also work!)
 
 Tip: To use this on an iPad you will need to host it on a webserver that the iPad can access (iPads cannot open locally saved .html files)
 Ideally you would host it on a local http server on your lan (this makes most browser happier from a security prespective).
-It's easier than you think to run up a tiny http server on a computer on your LAN - use the Google.  For those that cannot - I have hosted at my personal website at http://pro7api.greyshirtguy.com/Pro7SinglePresentationRemote.html
+It's easier than you think to run up a tiny http server on a computer on your LAN - use the Google.  
+
+(eg on MacOS you can run this one liner in the terminal within a folder that has the .html: python3 -m http.server --cgi 8080)
+
+For those that cannot - I have hosted at my personal website at http://pro7api.greyshirtguy.com/Pro7SinglePresentationRemote.html
 
 Example URL to connect to ProPresenter 7 with ip address 192.168.1.7 and port 50001 and control the presentation that is called "Message":
 
