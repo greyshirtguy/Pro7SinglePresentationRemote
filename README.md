@@ -21,6 +21,9 @@ You can optionally include the following query string in the URL to control the 
 quality=[Quality of thumbnail images is the width in pixels of the image data (defaults to 600 if not provided)]
 ```
 
+Example URL of file on a MacOS computer, in my home folder, with parameters to connect to Pro7 on the same machine with port 50001 and to control a presenation called "Message":  
+file:///Users/dan/Pro7/New%20API/Web/Pro7SinglePresentationRemoteTablet.html?pro7Address=127.0.0.1&pro7Port=50001&controlPresName=Message&slideQuality=440
+
 Click any slide to trigger it (Space Bar and Arrow keys also work!)
 
 
